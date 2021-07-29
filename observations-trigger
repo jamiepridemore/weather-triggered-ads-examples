@@ -1,0 +1,83 @@
+//Sign up for a free AerisWeather API developer account at https://www.aerisweather.com/signup/developer/
+//Enter Aerisweather API client_id and client_secret below
+var AERIS_CLIENT_ID = 'INSERT CLIENT ID HERE'; //This should be 'YOUR_CLIENT_ID' in examples
+var AERIS_CLIENT_SECRET = 'INSERT CLIENT SECRET'; //This should be 'YOUR_CLIENT_SECRET' in examples
+var AERIS_API_URL = 'https://api.aerisapi.com/observations/';
+ 
+var FIELDS = 'ob.tempF,ob.dewpointF,ob.windSpeedMPH,ob.weatherPrimary,ob.sky';
+var FILTER = ‘allstations,hasprecip,interp’
+ 
+function main() {
+  adjustCampaigns();
+}
+ 
+/**
+* Adjust your campaigns accordingly based current weather 
+* data returned. Examples are given but replace them with
+* your own campaign adjustments and weather conditions.
+*/
+function adjustCampaigns() {
+  var currentWx = getCurrentWeatherFor('Eden Prairie, MN');
+  var ob = currentWx.response.ob;
+ 
+  if (ob.tempF > 60) {
+    Logger.log('Shorts weather'); 
+  }
+  
+  if (ob.weatherPrimary === 'Light Snow' || ob.weatherPrimary === 'Snow' || ob.weatherPrimary === 'Heavy Snow') {
+    Logger.log('Its beginning to look a lot like Christmas');
+  }
+ 
+  if (ob.dewpointF > 65) {
+    Logger.log('It is muggier than a coffee shop out here.');
+  }
+ 
+  //Compare 2 different locations and adjust campaign accordingly
+  var shermanOaksWx = getCurrentWeatherFor('Sherman Oaks, CA');
+  var obSO = shermanOaksWx.response.ob;
+  var obEP = ob;
+  //Simple example to test against weather & location of weather
+  if (obSO.tempF > obEP.tempF) {
+  var EPBeerCampaign = AdsApp.campaigns()
+   .withCondition("CampaignName = 'Beer ads for in Eden Prarie'")
+  .get()
+  .next();
+  campaign.pause();
+  var SOBeerCampaign = AdsApp.campaigns()
+  .withCondition("CampaignName = 'Beer ads for in Sherman Oaks'")
+  .get()
+  .next();
+  adGroup.bidding().setCpc(adGroup.bidding().getCpc() + 0.3);
+  
+    Logger.log('Pause beer ads in Eden Prarie and bump up ads in Sherman Oaks');  
+  }
+}
+ 
+/**
+* Build observations endpoint url given location.
+* We insert the FIELDS variable into the fields url parameter to return only desired variables
+*/
+function getCurrentWeatherFor(location) {
+  
+  const url = Utilities.formatString(
+    '%s%s?&fields=%s&filter=%s&client_id=%s&client_secret=%s',
+    AERIS_API_URL,
+    location,
+    FIELDS,
+    FILTER,
+    AERIS_CLIENT_ID,
+    AERIS_CLIENT_SECRET);
+  
+    var response = UrlFetchApp.fetch(url);
+    var result = JSON.parse(response);
+ 
+    //Check for successful AerisWeather API call
+    if (!result.success) {
+    throw Utilities.formatString(
+        'Error returned by API: %s, Location searched: %s.',
+        result.error.code, location);
+    }
+    
+ 
+    return result;
+}
