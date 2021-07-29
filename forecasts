@@ -1,0 +1,85 @@
+//Sign up for a free AerisWeather API developer account at https://www.aerisweather.com/signup/developer/
+//Enter Aerisweather API client_id and client_secret below
+var AERIS_CLIENT_ID = 'YOUR_CLIENT_ID'; 
+var AERIS_CLIENT_SECRET = 'YOUR_CLIENT_SECRET'; 
+var AERIS_API_URL = 'https://api.aerisapi.com/forecasts/';
+
+//Limit the amount of data the API returns by providing only the fields you need
+var FIELDS = 'periods.maxTempF,periods.sky,periods.precipIN,periods.snowIN,periods.windSpeedMaxMPH,periods.weatherPrimary,periods.timestamp';
+
+function main() {
+  adjustCampaigns();
+}
+
+/**
+* Adjust your campaigns accordingly based on the forecast 
+* data returned. Examples are given but replace them with
+* your own campaign adjustments and weather conditions.
+*/
+function adjustCampaigns() {
+  
+  var wxForecast = getWeatherForecastFor('Eden Prairie, MN'); 
+ // Logger.log(wxForecast);
+  
+  //Example 1: Take action using upcoming rainy days in the forecast 
+  var daysWithRain = 0;
+  var rainfall = 0;
+  var forecast = wxForecast.response[0]['periods'];
+  for (var i= 0; i < forecast.length; i++) {
+    if (forecast[i].precipIN > 0) {
+      daysWithRain = daysWithRain + 1;
+      rainfall = rainfall + forecast[i].precipIN;
+    }
+  }
+ 
+  if (daysWithRain > 0) {
+    //Remove this silly message and replace with campaign adjustment logic
+    Logger.log('Rain, rain, go away. Make sure to adjust the ads this way');
+  }
+  
+  //Example 2: Use snowfall accumulation to trigger campaign logic
+  var snowfall = 0;
+  var snowForecast = wxForecast.response[0]['periods'];
+  for (var i= 0; i < snowForecast.length; i++) {
+    if (snowForecast[i].snowIN > 0) {
+      snowfall = snowfall + snowForecast[i].snowIN;
+    }
+  }
+  //At least half foot in the forecast? 
+  if (snowfall >= 6) {
+	 Logger.log('Dashing Through the Snow!');
+  }
+  
+  //Example 3: Check each day for beach weather with skycover < 50%
+  //If found then hammer the suncscreen ads 
+  for (var i= 0; i < forecast.length; i++) {
+    if (forecast[i].maxTempF > 70 && forecast[i].sky < 50) {
+     Logger.log('Get that sunscreen ready');
+    }
+  }
+}
+
+/**
+* Build the forecast API endpoint url given location.
+* We insert the FIELDS variable into the fields url parameter to return only desired variables
+*/
+function getWeatherForecastFor(location) {
+  
+  const url = Utilities.formatString(
+    '%s%s?&fields=%s&client_id=%s&client_secret=%s',
+    AERIS_API_URL,
+    location,
+    FIELDS,
+    AERIS_CLIENT_ID,
+    AERIS_CLIENT_SECRET);
+  
+    var response = UrlFetchApp.fetch(url);
+    var result = JSON.parse(response);
+    if (!result.success) {
+    throw Utilities.formatString(
+        'Error returned by API: %s, Location searched: %s.',
+        result.error.code, location);
+    }
+ 
+    return result;
+}
